@@ -1,13 +1,57 @@
 //
-//  AEL config file
+//  AEL config file Alex Hayvoronskyi 12.12.2015
 //
+
+macro dial-EU( ext ) {
+// карточки 1,2 - Вся європа (безлім)
+// карточки 3,4 - Польща (безлім)
+
+
+switch (${ext}) {
+	pattern +48.: 
+	// call to PL - line search order 4,3 - 2,1
+	Dial(SIP/PL/2${ext},60);
+	Dial(SIP/PL/1${ext},60);
+	break;
+
+	default: 
+	// call to EU - line search order 2,1
+	Dial(SIP/PL/1${ext},60);
+	break;
+
+}; // switch
+
+};
+
+
 
 macro ats( ext ) {
 	Set(fname=${STRFTIME(${EPOCH},,%Y%m%d%H%M)}-${CALLERID(number)}-${ext});
 	MixMonitor(/var/log/asterisk/records/${fname}.wav);
 	Dial(SIP/linksys1,60,D(${ext}));
 	Dial(SIP/linksys2,60,D(${ext}));
-}
+	Dial(SIP/linksys3,60,D(${ext}));
+	Dial(SIP/linksys4,60,D(${ext}));
+
+};
+
+macro call-eu( ext ) {
+// Пробуєм через брідж в PL, а якщо невдалося - через System Telecom
+
+				Set(fname=${STRFTIME(${EPOCH},,%Y%m%d%H%M)}-${CALLERID(number)}-${ext});
+                                MixMonitor(/var/log/asterisk/records/${fname}.wav);
+				&dial-EU(${ext});
+				// Dial(SIP/systelecom/${ext:1}); // відрізаєм +				
+};
+
+macro call-eu-gw( ext ) {
+// тільки через брідж в PL
+
+                                Set(fname=${STRFTIME(${EPOCH},,%Y%m%d%H%M)}-${CALLERID(number)}-${ext});
+                                MixMonitor(/var/log/asterisk/records/${fname}.wav);
+                                &dial-EU(${ext});
+};
+
 
 macro callout( chan, ext) {
 				Set(fname=${STRFTIME(${EPOCH},,%Y%m%d%H%M)}-${CALLERID(number)}-${ext});
@@ -21,11 +65,67 @@ macro callint( ext) {
 // Виклик sip-абонентів
                                 Set(fname=${STRFTIME(${EPOCH},,%Y%m%d%H%M)}-${CALLERID(number)}-${ext});
                                 MixMonitor(/var/log/asterisk/records/${fname}.wav);
-			switch (${ext})  {
-				case 666: Dial(SIP/o.haivoronskyi);
+			switch (${ext}) {
+
+				// Внутрішні VoIP 
+
+				case 600: Dial(SCCP/600&SIP/tts/o.haivoronskyi,20);   // Гайворонський
+					  // Dial(IAX2/tt/o.haivoronskyi,15);
                                           Dial(SIP/UKR-KS/+380673132079);
                                           break;
-				case 400: Dial(SIP/v.medvid);
+				case 690: Dial(SIP/MD/100); // Молдова - перевірка рахунку
+				case 601: Dial(SIP/kib,30);
+					  Dial(SIP/UKR-KS/+380676739074); // Криницький
+                                          break;
+				case 602: Dial(SIP/tts/i.zherebukh,20);   // Жеребух
+                                          Dial(SIP/UKR-KS/0673132065);
+                                          break;
+                                case 610: Dial(IAX2/tt/d.oliinyk,40); // Олійник Дмитро (Галіція)
+                                          break;
+				case 630: Dial(SIP/i.marutiak,20); // Логістичний департамент - Марутяк
+					  Dial(SIP/UKR-KS/+380676700970);
+                                          break;
+				case 634: Dial(SCCP/634,60); // Логістичний департамент
+					  break;
+				case 623: Dial(SIP/s.kozak,20);        // Відділ продажу -  С.Козак
+					  Dial(SIP/UKR-KS/+380676767284);
+					  break;
+				case 624: Dial(SIP/o.dumanskyj,20);  // Олег Думанський
+					  Dial(SIP/UKR-KS/+380673418048);
+					  break;
+				case 616: Dial(SIP/r.bozhyk,20);         // Рома Божик
+					  Dial(SIP/UKR-KS/+380676707635);
+					  break;
+				 case 666: Dial(SIP/i.zherebukh,10);         // Ігор Жеребух
+                                          Dial(SIP/UKR-KS/+380673132065);
+                                          break;
+
+
+
+		
+				// Логісти ТТ
+				case 651: Dial(SIP/a.bas); //  
+                                          break;
+				case 652: Dial(SIP/m.ivantsik); //
+                                          break;
+				case 653: Dial(SIP/i.grytsa); //
+                                          break;
+                                case 654: Dial(SIP/p.fedenko); //
+                                          break;
+                                case 655: Dial(SIP/r.budzyn); //
+                                          break;
+                                case 656: Dial(SIP/r.stelmakh); //
+                                          break;
+                                case 657: Dial(SIP/t.burda); //
+                                          break;
+				// ------- End of Логісти ТТ
+
+				case 622: Dial(SIP/a.artsyshevsky);
+                                          Dial(SIP/UKR-KS/+380676727343);
+                                          break;
+
+				// Молдова (поки що на мобілки)
+			        case 400: Dial(SIP/v.medvid);
 					  Dial(SIP/MD/+37360257771);
 					  break;
 				case 401: Dial(SIP/o.glavatska);
@@ -73,11 +173,99 @@ macro callint( ext) {
 				case 415: Dial(SIP/o.belinski);
                                           Dial(SIP/MD/+37368229242);
                                           break;
-				case 100: Dial(SIP/ml);
+				
+				// PL
+				case 500: &dial-EU(+48691338639); // ДАНИЛЕЙЧЕНКО 
 					  break;
+                                case 501: &dial-EU(+48691339742); // ЗЬОЛКОВСКІ 
+                                          break;
+                                case 502: &dial-EU(+48691335371); // ВОЛЬСКА 
+                                          break;
+                                case 503: &dial-EU(+48601943396); // ЛУКАШЕК 
+                                          break;
+                                case 504: &dial-EU(+48603860639); // ЯЦКОВСКА 
+                                          break;
+                                case 505: &dial-EU(+48603708829); // ТРОЯНОВСКА 
+                                          break;
+                                case 506: &dial-EU(+48609519672); // СЬМЄЛАК 
+                                          break;
+                                case 507: &dial-EU(+48885851052); // РОНДЯК 
+                                          break;
+                                case 508: &dial-EU(+48605600473); // ФЕДИНЯК 
+                                          break;
+                                case 509: &dial-EU(+48603708541); // ПШИЛУЦКА 
+                                          break;
+                                case 510: &dial-EU(+48691510896); // МІРОВСКІ 
+                                          break;
+                                case 511: &dial-EU(+48601943404); // ДЗЄДЗІЦ 
+                                          break;
+                                case 512: &dial-EU(+48691510715); // ДОНДА 
+                                          break;
+                                case 513: &dial-EU(+48660505173); // НОВАК 
+                                          break;
+                                case 514: &dial-EU(+48605604517); // ЯРОШ 
+                                          break;
+                                case 515: &dial-EU(+48603708169); // БАРЩ 
+                                          break;
+                                case 516: &dial-EU(+48691536954); // КАЧМАРСКІ 
+                                          break;
+                                case 517: &dial-EU(+48603709580); // СМОЛАРЧІК 
+                                          break;
+                                case 518: &dial-EU(+48601632373); // ЗЮЛКОВСКІ 
+                                          break;
+                                case 519: &dial-EU(+48609993785); // БЕК 
+                                          break;
+                                case 520: &dial-EU(+48661424237); // КАЧМАРСКІ 
+                                          break;
+                                case 521: &dial-EU(+48691111785); // ХМЄЛЕВСКІ 
+                                          break;
+                                case 522: &dial-EU(+48691113668); // ВАГОВА (PL)
+                                          break;
+                                case 523: &dial-EU(+48691334573); // ДІДУР 
+                                          break;
+                                case 524: &dial-EU(+48609519671); // БРУДНОВСКА 
+                                          break;
+                                case 525: &dial-EU(+48691910652); // ЧУБАК 
+                                          break;
+                                case 526: &dial-EU(+48603364663); // СВЄКЛЕЙ 
+                                          break;
+                                case 527: &dial-EU(+48609990705); // ВОЙТАШЕК 
+                                          break;
+                                case 528: &dial-EU(+48660505227); // МАТУШЕВСЬКА 
+                                          break;
+                                case 530: &dial-EU(+48691510804); // ЛЕВИЦЬКА 
+                                          break;
+                                case 531: &dial-EU(+48691330856); // ЗАВАНТАЖЕННЯ ГОТОВОЇ ПРОДУКЦІЇ
+                                          break;
+                                case 532: &dial-EU(+48691332984); // СКЛАДИ
+                                          break;
+                                case 533: &dial-EU(+48691445567); // КОТЕЛЬНЯ
+                                          break;
+                                case 534: &dial-EU(+48691449023); // ЕЛЕКТРИКИ
+                                          break;
+                                case 535: &dial-EU(+48603704204); // ПУНКТ УПРАВЛІННЯ
+                                          break;
+                                case 536: &dial-EU(+48691338741); // ОЧИСНІ СПОРУДИ
+                                          break;
+				case 537: &dial-EU(+48508092829); // МАТИЯ  
+                                          break;
+				case 538: &dial-EU(+48505540680); // КУДІН 
+					  break;
+				case 540: &dial-EU(+48603706836); // ЗУЗОК
+                                          break;
+
+                                case 550: &dial-EU(+48691442872); // ПШИЛУЦКІ Міхал
+                                          break;
+                                case 551: &dial-EU(+48795298282); // ЗЄЯ Агнешка
+                                          break;
+                                case 552: &dial-EU(+48795298313); // АБРАМЧИК-ЩИКУТОВІЧ
+                                          break;
+                                case 553: &dial-EU(+48511972025); // ГРУШКА Євгеніуш
+                                          break;
 
 
 
+				// Не існуючий номер
 				default: { zapateller;
 					   Hungup();
 				};
@@ -87,14 +275,16 @@ macro callint( ext) {
 
 
 context wait-extn {
+			#   => jump ${Dex}@probiz-eu;
 			_X! => jump ${Dex}${EXTEN}@${ExContext};
-			s   => WaitExten(60);
+			s   => WaitExten(13);
+			t   => jump ${Dex}@probiz-eu;
 };
 
 
 context ext-ukr-guest {
 			 _2XX           => &ats(${EXTEN});
-	                 _[46]XX        => &callint(${EXTEN});
+	                 _[456]XX        => &callint(${EXTEN});
 			 _X!		=> {
 						Set(Dex=${EXTEN});
 						jump s@wait-extn;
@@ -103,8 +293,9 @@ context ext-ukr-guest {
                                                  Hangup();
                                                };
 
-
 			s =>  {
+				Answer();
+	                        Set(ExContext=ext-ukr-guest);
 				Set(Dex=);
 				jump s@wait-extn;
 			};
@@ -112,23 +303,36 @@ context ext-ukr-guest {
 
 context ext-ukr-user {
                          _2XX           => &ats(${EXTEN});
-                         _[46]XX        => &callint(${EXTEN});
-	  			// to MD Orange
+                         _[456]XX        => &callint(${EXTEN});
+			 111		=> {
+						Answer();
+						MusicOnHold();
+					};
+			// to MD Orange
 	                 _003736[089]XXXXXX => &callout(SIP/MD,+${EXTEN:2});
-        	         _+3736[089]XXXXXX  => &callout(SIP/MD,${EXTEN});
-                	 _73XXX/+380673132079    => Dial(SIP/MD/${EXTEN:2});
+		         _+3736[089]XXXXXX  => &callout(SIP/MD,${EXTEN});
+			 _73XXX             => Dial(SIP/MD/${EXTEN:2});
+
+			// to KS
+			_003809[678]XXXXXXX => &callout(SIP/UKR-KS,+${EXTEN:2});
+                         _+3809[678]XXXXXXX  => &callout(SIP/UKR-KS,${EXTEN});
+                         _003806[78]XXXXXXX  => &callout(SIP/UKR-KS,+${EXTEN:2});
+                         _+3806[78]XXXXXXX   => &callout(SIP/UKR-KS,${EXTEN});
+                         _09[678]XXXXXXX     => &callout(SIP/UKR-KS,${EXTEN});
+                         _06[78]XXXXXXX      => &callout(SIP/UKR-KS,${EXTEN});
+
+
 				// catch all incomplete extensions		
                          _X!    => {
                                                 Set(Dex=${EXTEN});
                                                 jump s@wait-extn;
                          };
-			 _XXXXXXXXXXXXX    =>  { zapateller;
-						 Hangup();
-					       };
 
 
 
                         s =>  {
+				Answer();
+	                        Set(ExContext=ext-ukr-user);
                                 Set(Dex=);         
                                 jump s@wait-extn;
                         };
@@ -137,7 +341,7 @@ context ext-ukr-user {
 
 context ext-md-guest {
                          _2XX           => &ats(${EXTEN});
-                         _[46]XX        => &callint(${EXTEN});
+                         _[456]XX        => &callint(${EXTEN});
                          _X!         => {
                                                 Set(Dex=${EXTEN});
                                                 jump s@wait-extn;
@@ -147,32 +351,87 @@ context ext-md-guest {
                                                };
 
                         s =>  {
+				Answer();
+	                        Set(ExContext=ext-md-guest);
                                 Set(Dex=);
                                 jump s@wait-extn;
                         };
 };
 
 context ext-md-user {
+// From MD
                          _2XX           => &ats(${EXTEN});
-                         _[46]XX        => &callint(${EXTEN});
+                         _[456]XX        => &callint(${EXTEN});
 			//to  UKR Kyivstar
 	                 _003809[678]XXXXXXX => &callout(SIP/UKR-KS,+${EXTEN:2});
-        	         _+3809[678]XXXXXXX  => &callout(SIP/UKR-KS,${EXTEN});
-               	 	 _003806[78]XXXXXXX  => &callout(SIP/UKR-KS,+${EXTEN:2});
+		         _+3809[678]XXXXXXX  => &callout(SIP/UKR-KS,${EXTEN});
+			 _003806[78]XXXXXXX  => &callout(SIP/UKR-KS,+${EXTEN:2});
 	                 _+3806[78]XXXXXXX   => &callout(SIP/UKR-KS,${EXTEN});
-        	         _09[678]XXXXXXX     => &callout(SIP/UKR-KS,${EXTEN});
-                	 _06[78]XXXXXXX      => &callout(SIP/UKR-KS,${EXTEN});
+			 _09[678]XXXXXXX     => &callout(SIP/UKR-KS,${EXTEN});
+			 _06[78]XXXXXXX      => &callout(SIP/UKR-KS,${EXTEN});
+
+			// to EU
+			 
 			// catch incomplete dial 
                          _X!    => {
                                                 Set(Dex=${EXTEN});
                                                 jump s@wait-extn;
                          };
-			_XXXXXXXXXXXXXX    =>  { zapateller;
-                                                 Hangup();
-                                               };
 
 
                         s =>  {
+				Answer();
+	                        Set(ExContext=ext-md-user);
+                                Set(Dex=);
+                                jump s@wait-extn;
+                        };
+};
+
+
+context ext-pl-guest { // План для вхідних з GSM в PL
+                         _2XX           => &ats(${EXTEN});
+                         _[46]XX        => &callint(${EXTEN});
+                         _X!         => {
+                                                Set(Dex=${EXTEN});
+                                                jump s@wait-extn;
+                         };
+                        _XXX    =>  {            zapateller;
+                                                 Hangup();
+                                               };
+
+                        s =>  {
+				Answer();
+                                Set(ExContext=ext-pl-guest);
+                                Set(Dex=);
+                                jump s@wait-extn;
+                        };
+};
+
+
+context ext-pl-user {
+                         _2XX           => &ats(${EXTEN});
+                         _[46]XX        => &callint(${EXTEN});
+	//to  UKR Kyivstar
+                         _003809[678]XXXXXXX => &callout(SIP/UKR-KS,+${EXTEN:2});
+                         _+3809[678]XXXXXXX  => &callout(SIP/UKR-KS,${EXTEN});
+                         _003806[78]XXXXXXX  => &callout(SIP/UKR-KS,+${EXTEN:2});
+                         _+3806[78]XXXXXXX   => &callout(SIP/UKR-KS,${EXTEN});
+                         _09[678]XXXXXXX     => &callout(SIP/UKR-KS,${EXTEN});
+                         _06[78]XXXXXXX      => &callout(SIP/UKR-KS,${EXTEN});
+         // to MD Orange
+                         _003736[089]XXXXXX => &callout(SIP/MD,+${EXTEN:2});
+                         _+3736[089]XXXXXX  => &callout(SIP/MD,${EXTEN});
+
+
+                        // catch incomplete dial
+                         _X!    => {
+                                                Set(Dex=${EXTEN});
+                                                jump s@wait-extn;
+                         };
+
+                        s =>  {
+				Answer();
+	                        Set(ExContext=ext-pl-user);
                                 Set(Dex=);
                                 jump s@wait-extn;
                         };
@@ -181,259 +440,636 @@ context ext-md-user {
 
 
 
-context ivr-ukr-guest {
-		 s => { 
-			Answer();
-			Set(ExContext=ext-ukr-guest);		
-			jump s@ext-ukr-guest;
-		};
-};
-
-
-
-
-context ivr-ukr-user {
-                s => {
-                        Answer();
-			Set(ExContext=ext-ukr-user);
-                        jump s@ext-ukr-user;
-                };
-};
-
-
-
-
-
-context ivr-md-guest {
-                s => {
-                        Answer();
-			Set(ExContext=ext-md-guest);
-                        jump s@ext-md-guest;
-                };
-};
-
-
-
-context ivr-md-user {
-                s => {
-                        Answer();
-			Set(ExContext=ext-md-user);
-                        jump s@ext-md-user;
-                };
-};
-
 
 
 context tbfruit-int {
-	// Наші sip-клієнти і телефони АТС-ок
-	_2XX		=> &ats(${EXTEN});
-	_0 		=> &ats(${EXTEN});
-	_[146]XX 	=> &callint(${EXTEN});
-	
-	// to MD Orange
-	 _003736[089]. => &callout(SIP/MD,+${EXTEN:2});
-	 _+3736[089].  =>  &callout(SIP/MD,${EXTEN});
-
-	//to  UKR Kyivstar
-	 _003809[678]. => &callout(SIP/UKR-KS,+${EXTEN:2});
-	 _+3809[678].  => &callout(SIP/UKR-KS,${EXTEN});
-	 _003806[78].  => &callout(SIP/UKR-KS,+${EXTEN:2});
-	 _+3806[78].   => &callout(SIP/UKR-KS,${EXTEN});
-	 _09[678].     => &callout(SIP/UKR-KS,${EXTEN});
-	 _06[78].      => &callout(SIP/UKR-KS,${EXTEN});
+	*9		=> VoiceMailMain(${CALLERID(NUM)});
+	includes { moldova-gw; };
+        includes { ukraine-gw; };
+        includes { probiz-eu; };
+        includes { tb-internal; };
+        includes { voip-carrier; };
 
 
-	// testing
-	 _74.	   => Dial(SIP/UKR-KS/${EXTEN:2});
-	 _73.      => Dial(SIP/MD/${EXTEN:2});
-	 
-	 999 	=> {
-                Answer();
-                Wait(2);
-                Record(recordings/gr-m.wav);
-                Wait(1);
-                Playback(recordings/gr-m);
-                }
+	// to Lviv (local calls)
+
 
 };
 
 
 context from-UKR {
-// Сюди залітають вхідні з GSM в Городку
-	701/+380673132079 => jump s@ivr-ukr-user;
-	701/+380965034476 => jump s@ivr-ukr-user;
-	701/+380673703527 => jump s@ivr-ukr-user;	// МОЧАЛЮК Олег Леонідович
-	701/+380673701542 => jump s@ivr-ukr-user;       // ШПУК Андрій Богданович
-	701/+380676739059 => jump s@ivr-ukr-user;       // СОЛТИС
-	701/+380676727343 => jump s@ivr-ukr-user;       // АРЦИШЕВСЬКИЙ
-	701/+380676706742 => jump s@ivr-ukr-user;       // ФІГЕЛЬ
-	701/+380673413350 => jump s@ivr-ukr-user;       // МАЗУР
-	701/+380676761363 => jump s@ivr-ukr-user;       // ДОБРОВОЛЬСЬКИЙ
-	701/+380676729040 => jump s@ivr-ukr-user;       // САВИЦЬКА
-	701/+380673106959 => jump s@ivr-ukr-user;       // ЛЯСКА
-	701/+380679097693 => jump s@ivr-ukr-user;       // ВЕТОШКО
-	701/+380676707664 => jump s@ivr-ukr-user;       // ОСТРОВЕРХА
-	701/+380673106283 => jump s@ivr-ukr-user;       // СЕРЕДА
-	701/+380673107791 => jump s@ivr-ukr-user;       // ЧИРКА
-	701/+380673101663 => jump s@ivr-ukr-user;       // КАЇНСЬКИЙ
-	701/+380676703873 => jump s@ivr-ukr-user;       // ЛУЧИТ
-	701/+380989260426 => jump s@ivr-ukr-user;       // СИНИШИН
-	701/+380635501228 => jump s@ivr-ukr-user;       // СКРИПАЙ
-	701/+380932783576 => jump s@ivr-ukr-user;       // ГРЕСИК
-	701/+380676765283 => jump s@ivr-ukr-user;       // ТРЯСОРУБ
-	701/+380676739053 => jump s@ivr-ukr-user;       // ХАРАЧКО
-	701/+380676707639 => jump s@ivr-ukr-user;       // БІГУН-ТЕТЕРКА
-	701/+380676739167 => jump s@ivr-ukr-user;       // ЗІНЬКО
-	701/+380673109228 => jump s@ivr-ukr-user;       // ПАЛАМАРЧУК
-	701/+380673734245 => jump s@ivr-ukr-user;       // ПАЛІЙ
-	701/+380673106785 => jump s@ivr-ukr-user;       // КОЛОДІЙ
-	701/+380676703857 => jump s@ivr-ukr-user;       // ТИМОФІЇВ
-	701/+380676761360 => jump s@ivr-ukr-user;       // СИНЕЦЬКИЙ
-	701/+380673400797 => jump s@ivr-ukr-user;       // БІЛЯК
-	701/+380672994770 => jump s@ivr-ukr-user;       // КАРАПІНКА
-	701/+380676739041 => jump s@ivr-ukr-user;       // ПОГОРІЛКО
-	701/+380673477245 => jump s@ivr-ukr-user;       // ХОМИК
-	701/+380673249546 => jump s@ivr-ukr-user;       // ЗАКОПЕЦЬ
-	701/+380676734017 => jump s@ivr-ukr-user;       // ГАПЛИК
-	701/+380676739063 => jump s@ivr-ukr-user;       // ГОНЧАРОВ
-	701/+380676739144 => jump s@ivr-ukr-user;       // КОНКЕВИЧ
-	701/+380673107572 => jump s@ivr-ukr-user;       // БІРЮК
-	701/+380673710058 => jump s@ivr-ukr-user;       // КАЧУР
-	701/+380676767284 => jump s@ivr-ukr-user;       // КОЗАК
-	701/+380676739329 => jump s@ivr-ukr-user;       // ПРУСАК
-	701/+380676707635 => jump s@ivr-ukr-user;       // БОЖИК
-	701/+380673418048 => jump s@ivr-ukr-user;       // УСТРИЦЬКА
-	701/+380676746447 => jump s@ivr-ukr-user;       // РУСАНОВА
-	701/+380676738377 => jump s@ivr-ukr-user;       // ПАЛАШОВАНИЙ Ігор
-	701/+380673710115 => jump s@ivr-ukr-user;       // ДЕМКІВ
-	701/+380973417623 => jump s@ivr-ukr-user;       // ФОСТЯК Михайло
-	701/+380676742443 => jump s@ivr-ukr-user;       // ТУРКАЛЯК
-	701/+380986233922 => jump s@ivr-ukr-user;       // ПАЛАШОВАНИЙ Андрій
-	701/+380967497982 => jump s@ivr-ukr-user;       // ГАСЮК
-	701/+380673401702 => jump s@ivr-ukr-user;       // КАБАН
-	701/+380673422579 => jump s@ivr-ukr-user;       // МОСКВА
-	701/+380673132081 => jump s@ivr-ukr-user;       // ПАСЛАВСЬКИЙ
-	701/+380673400520 => jump s@ivr-ukr-user;       // КУЛАК
-	701/+380673132289 => jump s@ivr-ukr-user;       // ДАШО
-	701/+380674773292 => jump s@ivr-ukr-user;       // ДАЦКІВ
-	701/+380673401059 => jump s@ivr-ukr-user;       // ДРОГОМИРЕЦЬКА
-	701/+380676759377 => jump s@ivr-ukr-user;       // ВАВРИНЧУК
-	701/+380676765282 => jump s@ivr-ukr-user;       // БАБИЧ
-	701/+380673405574 => jump s@ivr-ukr-user;       // СМІЛКА
-	701/+380676707671 => jump s@ivr-ukr-user;       // ЛЕМІШОВСЬКА
-	701/+380673249547 => jump s@ivr-ukr-user;       // МОСКАЛИК
-	701/+380673113615 => jump s@ivr-ukr-user;       // ДЕРКО
-	701/+380679450121 => jump s@ivr-ukr-user;       // ХРИНІВСЬКИЙ
-	701/+380673705884 => jump s@ivr-ukr-user;       // ЩЕРБАКОВ
-	701/+380673400868 => jump s@ivr-ukr-user;       // БУРДАШ
-	701/+380673132065 => jump s@ivr-ukr-user;       // ЖЕРЕБУХ
-	701/+380673132079 => jump s@ivr-ukr-user;       // ГАЙВОРОНСЬКИЙ
-	701/+380676739074 => jump s@ivr-ukr-user;       // КРИНИЦЬКИЙ
-	701/+380969523335 => jump s@ivr-ukr-user;       // НАБИТОВИЧ
-	701/+380676761558 => jump s@ivr-ukr-user;       // ПАЛИС
-	701/+380676741590 => jump s@ivr-ukr-user;       // ВИТОШКО
-	701/+380676739055 => jump s@ivr-ukr-user;       // ПІТА
-	701/+380678269677 => jump s@ivr-ukr-user;       // КОСИК
-	701/+380977581186 => jump s@ivr-ukr-user;       // ЛИСЮК
-	701/+380673132293 => jump s@ivr-ukr-user;       // ЖИГАЙЛО
-	701/+380673132297 => jump s@ivr-ukr-user;       // ЛЮЛЬКО
-	701/+380674672084 => jump s@ivr-ukr-user;       // ЄВТУШЕНКО
-	701/+380673734251 => jump s@ivr-ukr-user;       // ДУБИНА
-	701/+380673703527 => jump s@ivr-ukr-user;       // МОЧАЛЮК Олег
-	701/+380673401936 => jump s@ivr-ukr-user;       // ОЧЕРКЛЕВИЧ
-	701/+380676707152 => jump s@ivr-ukr-user;       // КАНЦЯР	
-	701/+380673405592 => jump s@ivr-ukr-user;       // МЕЛЬНИК
-	701/+380676707638 => jump s@ivr-ukr-user;       // ОРНАТ Андрій
-	701/+380971624970 => jump s@ivr-ukr-user;       // СОСНОВСЬКИЙ
-	701/+380975549821 => jump s@ivr-ukr-user;       // ЖОЛИНСЬКИЙ
-	701/+380671985354 => jump s@ivr-ukr-user;       // ТУХАЙ
-	701/+380673102037 => jump s@ivr-ukr-user;       // ОРНАТ Тарас
-	701/+380673102036 => jump s@ivr-ukr-user;       // ДЕМЧИШАК
-	701/+380673734243 => jump s@ivr-ukr-user;       // КОСОВИЧ
-	701/+380630602776 => jump s@ivr-ukr-user;       // ПЕЛЕНСЬКА
-	701/+380636960822 => jump s@ivr-ukr-user;       // ВОРОБЕЦЬ
-	701/+380975774452 => jump s@ivr-ukr-user;       // ЧОРНА
-	701/+380676640390 => jump s@ivr-ukr-user;       // ЛОПУШИНСЬКА
-	701/+380637248749 => jump s@ivr-ukr-user;       // СТАДНИК
-	701/+380673401633 => jump s@ivr-ukr-user;       // МАРКІВ
-	701/+380676766944 => jump s@ivr-ukr-user;       // ВИКОВИЧ
-	701/+380673107205 => jump s@ivr-ukr-user;       // КМІТЬ Зеновій Романович Менеджер з постачання
-	701/+380676759053 => jump s@ivr-ukr-user;       // ФОСТЯК Христина
-	701/+380679022369 => jump s@ivr-ukr-user;       // БАРНЯК
-	701/+380676706742 => jump s@ivr-ukr-user;       // ФІГЕЛЬ
-	701/+380676739160 => jump s@ivr-ukr-user;       // КЛОК
-	701/+380673106866 => jump s@ivr-ukr-user;       // НАВРОЦЬКА
-	701/+380672844279 => jump s@ivr-ukr-user;       // ГРЕДІЛЬ
-	701/+380673106541 => jump s@ivr-ukr-user;       // БАШИНСЬКА
-	701/+380673100462 => jump s@ivr-ukr-user;       // ДОЛЮК
-	701/+380673113356 => jump s@ivr-ukr-user;       // САДОВА
-	701/+380676739536 => jump s@ivr-ukr-user;       // ЦИГАНЧУК
-	701/+380673106535 => jump s@ivr-ukr-user;       // КУЗІВ
-	701/+380673734239 => jump s@ivr-ukr-user;       // НІКЛЕВИЧ
-	701/+380686492939 => jump s@ivr-ukr-user;       // БАЛЯБА
-	701/+380979733927 => jump s@ivr-ukr-user;       // ЮРИНЕЦЬ
-	701/+380673710071 => jump s@ivr-ukr-user;       // ШПУГАНИЧ
-	701/+380676739158 => jump s@ivr-ukr-user;       // ЖЕРЕБУХ Ірина
-	701/+380673710059 => jump s@ivr-ukr-user;       // КЛОК Світлана
-	701/+380680596949 => jump s@ivr-ukr-user;       // СОЛТИС Марія
-	701/+380978477124 => jump s@ivr-ukr-user;       // ВІГОР
-	701/+380971822746 => jump s@ivr-ukr-user;       // ГАДОМСЬКА
-	701/+380969478222 => jump s@ivr-ukr-user;       // МАЛИНОВСЬКА
-	701/+380676744192 => jump s@ivr-ukr-user;       // МИКОЛАЄВИЧ
+	701/+380965034476 => jump s@ext-ukr-user;	// 
+	701/+380673703527 => jump s@ext-ukr-user;	// МОЧАЛЮК Олег Леонідович
+	701/+380673701542 => jump s@ext-ukr-user;       // ШПУК Андрій Богданович
+	701/+380676739059 => jump s@ext-ukr-user;       // СОЛТИС
+	701/+380676727343 => jump s@ext-ukr-user;       // АРЦИШЕВСЬКИЙ
+	701/+380676706742 => jump s@ext-ukr-user;       // ФІГЕЛЬ
+	701/+380673413350 => jump s@ext-ukr-user;       // МАЗУР
+	701/+380676761363 => jump s@ext-ukr-user;       // ДОБРОВОЛЬСЬКИЙ
+	701/+380676729040 => jump s@ext-ukr-user;       // САВИЦЬКА
+	701/+380673106959 => jump s@ext-ukr-user;       // ЛЯСКА
+	701/+380679097693 => jump s@ext-ukr-user;       // ВЕТОШКО
+	701/+380676707664 => jump s@ext-ukr-user;       // ОСТРОВЕРХА
+	701/+380673106283 => jump s@ext-ukr-user;       // СЕРЕДА
+	701/+380673107791 => jump s@ext-ukr-user;       // ЧИРКА
+	701/+380673101663 => jump s@ext-ukr-user;       // КАЇНСЬКИЙ
+	701/+380676703873 => jump s@ext-ukr-user;       // ЛУЧИТ
+	701/+380989260426 => jump s@ext-ukr-user;       // СИНИШИН
+	701/+380635501228 => jump s@ext-ukr-user;       // СКРИПАЙ
+	701/+380932783576 => jump s@ext-ukr-user;       // ГРЕСИК
+	701/+380676765283 => jump s@ext-ukr-user;       // ТРЯСОРУБ
+	701/+380676739053 => jump s@ext-ukr-user;       // ХАРАЧКО
+	701/+380676707639 => jump s@ext-ukr-user;       // БІГУН-ТЕТЕРКА
+	701/+380676739167 => jump s@ext-ukr-user;       // ЗІНЬКО
+	701/+380673109228 => jump s@ext-ukr-user;       // ПАЛАМАРЧУК
+	701/+380673734245 => jump s@ext-ukr-user;       // ПАЛІЙ
+	701/+380673106785 => jump s@ext-ukr-user;       // КОЛОДІЙ
+	701/+380676703857 => jump s@ext-ukr-user;       // ТИМОФІЇВ
+	701/+380676761360 => jump s@ext-ukr-user;       // СИНЕЦЬКИЙ
+	701/+380673400797 => jump s@ext-ukr-user;       // БІЛЯК
+	701/+380672994770 => jump s@ext-ukr-user;       // КАРАПІНКА
+	701/+380676739041 => jump s@ext-ukr-user;       // ПОГОРІЛКО
+	701/+380673477245 => jump s@ext-ukr-user;       // ХОМИК
+	701/+380673249546 => jump s@ext-ukr-user;       // ЗАКОПЕЦЬ
+	701/+380676734017 => jump s@ext-ukr-user;       // ГАПЛИК
+	701/+380676739063 => jump s@ext-ukr-user;       // ГОНЧАРОВ
+	701/+380676739144 => jump s@ext-ukr-user;       // КОНКЕВИЧ
+	701/+380673710058 => jump s@ext-ukr-user;       // КАЧУР
+	701/+380676767284 => jump s@ext-ukr-user;       // КОЗАК
+	701/+380676739329 => jump s@ext-ukr-user;       // ПРУСАК
+	701/+380676707635 => jump s@ext-ukr-user;       // БОЖИК
+	701/+380673418048 => jump s@ext-ukr-user;       // УСТРИЦЬКА
+	701/+380676746447 => jump s@ext-ukr-user;       // РУСАНОВА
+	701/+380676738377 => jump s@ext-ukr-user;       // ПАЛАШОВАНИЙ Ігор
+	701/+380673710115 => jump s@ext-ukr-user;       // ДЕМКІВ
+	701/+380973417623 => jump s@ext-ukr-user;       // ФОСТЯК Михайло
+	701/+380676742443 => jump s@ext-ukr-user;       // ТУРКАЛЯК
+	701/+380986233922 => jump s@ext-ukr-user;       // ПАЛАШОВАНИЙ Андрій
+	701/+380967497982 => jump s@ext-ukr-user;       // ГАСЮК
+	701/+380673401702 => jump s@ext-ukr-user;       // КАБАН
+	701/+380673422579 => jump s@ext-ukr-user;       // МОСКВА
+	701/+380673132081 => jump s@ext-ukr-user;       // ПАСЛАВСЬКИЙ
+	701/+380673400520 => jump s@ext-ukr-user;       // КУЛАК
+	701/+380673132289 => jump s@ext-ukr-user;       // ДАШО
+	701/+380674773292 => jump s@ext-ukr-user;       // ДАЦКІВ
+	701/+380673401059 => jump s@ext-ukr-user;       // ДРОГОМИРЕЦЬКА
+	701/+380676759377 => jump s@ext-ukr-user;       // ВАВРИНЧУК
+	701/+380676765282 => jump s@ext-ukr-user;       // БАБИЧ
+	701/+380673405574 => jump s@ext-ukr-user;       // СМІЛКА
+	701/+380676707671 => jump s@ext-ukr-user;       // ЛЕМІШОВСЬКА
+	701/+380673249547 => jump s@ext-ukr-user;       // МОСКАЛИК
+	701/+380673113615 => jump s@ext-ukr-user;       // ДЕРКО
+	701/+380679450121 => jump s@ext-ukr-user;       // ХРИНІВСЬКИЙ
+	701/+380673705884 => jump s@ext-ukr-user;       // ЩЕРБАКОВ
+	701/+380673400868 => jump s@ext-ukr-user;       // БУРДАШ
+	701/+380673132065 => jump s@ext-ukr-user;       // ЖЕРЕБУХ
+	701/+380673132079 => jump s@ext-ukr-user;       // ГАЙВОРОНСЬКИЙ
+	701/+380676739074 => jump s@ext-ukr-user;       // КРИНИЦЬКИЙ
+	701/+380676761558 => jump s@ext-ukr-user;       // ПАЛИС
+	701/+380676741590 => jump s@ext-ukr-user;       // ВИТОШКО
+	701/+380676739055 => jump s@ext-ukr-user;       // ПІТА
+	701/+380678269677 => jump s@ext-ukr-user;       // КОСИК
+	701/+380977581186 => jump s@ext-ukr-user;       // ЛИСЮК
+	701/+380673132293 => jump s@ext-ukr-user;       // ЖИГАЙЛО
+	701/+380673132297 => jump s@ext-ukr-user;       // ЛЮЛЬКО
+	701/+380674672084 => jump s@ext-ukr-user;       // ЄВТУШЕНКО
+	701/+380673734251 => jump s@ext-ukr-user;       // ДУБИНА
+	701/+380673703527 => jump s@ext-ukr-user;       // МОЧАЛЮК Олег
+	701/+380673401936 => jump s@ext-ukr-user;       // ОЧЕРКЛЕВИЧ
+	701/+380676707152 => jump s@ext-ukr-user;       // КАНЦЯР	
+	701/+380673405592 => jump s@ext-ukr-user;       // МЕЛЬНИК
+	701/+380676707638 => jump s@ext-ukr-user;       // ОРНАТ Андрій
+	701/+380971624970 => jump s@ext-ukr-user;       // СОСНОВСЬКИЙ
+	701/+380975549821 => jump s@ext-ukr-user;       // ЖОЛИНСЬКИЙ
+	701/+380671985354 => jump s@ext-ukr-user;       // ТУХАЙ
+	701/+380673102037 => jump s@ext-ukr-user;       // ОРНАТ Тарас
+	701/+380673102036 => jump s@ext-ukr-user;       // ДЕМЧИШАК
+	701/+380673734243 => jump s@ext-ukr-user;       // КОСОВИЧ
+	701/+380630602776 => jump s@ext-ukr-user;       // ПЕЛЕНСЬКА
+	701/+380636960822 => jump s@ext-ukr-user;       // ВОРОБЕЦЬ
+	701/+380975774452 => jump s@ext-ukr-user;       // ЧОРНА
+	701/+380676640390 => jump s@ext-ukr-user;       // ЛОПУШИНСЬКА
+	701/+380637248749 => jump s@ext-ukr-user;       // СТАДНИК
+	701/+380673401633 => jump s@ext-ukr-user;       // МАРКІВ
+	701/+380676766944 => jump s@ext-ukr-user;       // ВИКОВИЧ
+	701/+380673107205 => jump s@ext-ukr-user;       // КМІТЬ Зеновій Романович Менеджер з постачання
+	701/+380679022369 => jump s@ext-ukr-user;       // БАРНЯК
+	701/+380676706742 => jump s@ext-ukr-user;       // ФІГЕЛЬ
+	701/+380676739160 => jump s@ext-ukr-user;       // КЛОК
+	701/+380673106866 => jump s@ext-ukr-user;       // НАВРОЦЬКА
+	701/+380672844279 => jump s@ext-ukr-user;       // ГРЕДІЛЬ
+	701/+380673106541 => jump s@ext-ukr-user;       // БАШИНСЬКА
+	701/+380673100462 => jump s@ext-ukr-user;       // ДОЛЮК
+	701/+380673113356 => jump s@ext-ukr-user;       // САДОВА
+	701/+380673106535 => jump s@ext-ukr-user;       // КУЗІВ
+	701/+380673734239 => jump s@ext-ukr-user;       // НІКЛЕВИЧ
+	701/+380686492939 => jump s@ext-ukr-user;       // БАЛЯБА
+	701/+380979733927 => jump s@ext-ukr-user;       // ЮРИНЕЦЬ
+	701/+380673710071 => jump s@ext-ukr-user;       // ШПУГАНИЧ
+	701/+380676739158 => jump s@ext-ukr-user;       // ЖЕРЕБУХ Ірина
+	701/+380673710059 => jump s@ext-ukr-user;       // КЛОК Світлана
+	701/+380680596949 => jump s@ext-ukr-user;       // СОЛТИС Марія
+	701/+380978477124 => jump s@ext-ukr-user;       // ВІГОР
+	701/+380971822746 => jump s@ext-ukr-user;       // ГАДОМСЬКА
+	701/+380969478222 => jump s@ext-ukr-user;       // МАЛИНОВСЬКА
+	701/+380676744192 => jump s@ext-ukr-user;       // МИКОЛАЄВИЧ
+	701/+380673405539 => jump s@ext-ukr-user;       // ГАВЕНКО Оксана
+	701/+380677816619 => jump s@ext-ukr-user;       // МАРТИНЯК
+	701/+380976604065 => jump s@ext-ukr-user;       // ОНИСЬКІВ
+	701/+380988615858 => jump s@ext-ukr-user;       // ПРОКОПІВ
+	701/+380972295702 => jump s@ext-ukr-user;       // ОКРЕПКИЙ
+	701/+380962881571 => jump s@ext-ukr-user;       // ЧІПАК
+	701/+380981792319 => jump s@ext-ukr-user;       // МУДРИК
+	701/+380978087005 => jump s@ext-ukr-user;       // ГРИНЧИШИН
+	701/+380680610969 => jump s@ext-ukr-user;       // ЗУБКО
+	701/+380676739056 => jump s@ext-ukr-user;       // КРИСА
+	701/+380676739554 => jump s@ext-ukr-user;       // РІКЄЙ
+	701/+380676739535 => jump s@ext-ukr-user;       // ДЕЦИК
+	701/+380676739314 => jump s@ext-ukr-user;       // ПИЛАТ
+	701/+380674526480 => jump s@ext-ukr-user;       // КОВАЛЬЧУК
+	701/+380676739544 => jump s@ext-ukr-user;       // ДМИТРИШИН
+	701/+380676739057 => jump s@ext-ukr-user;       // ВАРАКУТА
+	701/+380676759056 => jump s@ext-ukr-user;       // БОЙКО
+	701/+380673132068 => jump s@ext-ukr-user;       // ТОКАР
+	701/+380673106886 => jump s@ext-ukr-user;       // ГРЕСЬКІВ
+	701/+380685019590 => jump s@ext-ukr-user;       // ЗАГОРУЙКО
+	701/+380988253074 => jump s@ext-ukr-user;       // БОКАЛО
+	701/+380950589341 => jump s@ext-ukr-user;       // БОКАЛО
+	701/+380673106337 => jump s@ext-ukr-user;       // СЕМЕНЮК
+	701/+380673132058 => jump s@ext-ukr-user;       // ДЕРЕВЕЦЬКИЙ
+	701/+380962763977 => jump s@ext-ukr-user;       // ЛАКОМСЬКА
+	701/+380980855639 => jump s@ext-ukr-user;       // ВЕЗДЕНКО
+	701/+380971565322 => jump s@ext-ukr-user;       // ШИНАЛЬ
+	701/+380970381255 => jump s@ext-ukr-user;       // РУСИН
+	701/+380988979747 => jump s@ext-ukr-user;       // АНТОНІВ
+	701/+380673710141 => jump s@ext-ukr-user;       // ПЕРЕЙМА
+	701/+380673417454 => jump s@ext-ukr-user;       // ПАРОБЕЙКО
+	701/+380676761531 => jump s@ext-ukr-user;       // КОГУТ
+	701/+380988852443 => jump s@ext-ukr-user;       // МАРИНЯК
+	701/+380676881278 => jump s@ext-ukr-user;       // ПАРАЩИЧ
+	701/+380979798243 => jump s@ext-ukr-user;       // КОНДЗЬОЛА
+	701/+380673107109 => jump s@ext-ukr-user;       // ІЛЬЧИШИН
+	701/+380673111423 => jump s@ext-ukr-user;       // ОХРІН
+	701/+380676700907 => jump s@ext-ukr-user;       // ЄЛІН
+	701/+380679442379 => jump s@ext-ukr-user;       // БАРЩОВСЬКА Світлана
+	701/+380676759053 => jump s@ext-ukr-user;       // ФОСТЯК Христина
+	701/+380673106959 => jump s@ext-ukr-user;       // ЛЯСКА
+	701/+380673710082 => jump s@ext-ukr-user;       // ЛАВІНСЬКА
+	701/+380673734246 => jump s@ext-ukr-user;       // РАФАЛОВСЬКА
+	701/+380936450250 => jump s@ext-ukr-user;       // ТЕРШАКОВЕЦЬ
+	701/+380673734249 => jump s@ext-ukr-user;       // МАНАСТИРСЬКА
+	701/+380676753320 => jump s@ext-ukr-user;       // ГРОДЗІЦЬКА
+	701/+380676753279 => jump s@ext-ukr-user;       // КУКОШ
+	701/+380673112493 => jump s@ext-ukr-user;       // КРИВОНІС
+	701/+380673646076 => jump s@ext-ukr-user;       // БИГИБ
+	701/+380673710107 => jump s@ext-ukr-user;       // ГІРСЬКА
+	701/+380676707199 => jump s@ext-ukr-user;       // СЕРЕБРЕННІКОВ
+	701/+380676746399 => jump s@ext-ukr-user;       // ОЛІЙНИК
+	701/+380673710049 => jump s@ext-ukr-user;       // ПУКІВСЬКА
+	701/+380673710083 => jump s@ext-ukr-user;       // ПАНЬКІВ
+	701/+380981178453 => jump s@ext-ukr-user;       // ПАНЬКІВ
+	701/+380676759215 => jump s@ext-ukr-user;       // ЛІСОВСЬКИЙ
+	701/+380676759127 => jump s@ext-ukr-user;       // ЯРЕМЧУК
+	701/+380934537648 => jump s@ext-ukr-user;       // МАРКЕВИЧ
+	701/+380963599761 => jump s@ext-ukr-user;       // ЛАСКАВА
+	701/+380673710072 => jump s@ext-ukr-user;       // ЯРЕМКО
+	701/+380676706738 => jump s@ext-ukr-user;       // БАРНА
+	701/+380673734240 => jump s@ext-ukr-user;       // ЦВІГУН
+	701/+380673734244 => jump s@ext-ukr-user;       // МАМБЕТКУЛОВА
+	701/+380676700970 => jump s@ext-ukr-user;       // МАРУТЯК 
+	701/+380676706749 => jump s@ext-ukr-user;       // РОМАНЕНКО
+	701/+380676707639 => jump s@ext-ukr-user;       // БІГУН-ТЕТЕРКА
+	701/+380673132074 => jump s@ext-ukr-user;       // НАЗАРОВЕЦЬ
+	701/+380673113199 => jump s@ext-ukr-user;       // АЛЕКСАНДРОВИЧ
+	701/+380974758925 => jump s@ext-ukr-user;       // ДРИСЬ Юрій 
+	701/+380673710172 => jump s@ext-ukr-user;       // КУШНІР
+	701/+380687249599 => jump s@ext-ukr-user;       // ДРИСЬ Володимир 
+	701/+380962784949 => jump s@ext-ukr-user;       // МОРМІЛЬ
+	701/+380672586171 => jump s@ext-ukr-user;       // ГАПАЧИЛО 
+	701/+380972450785 => jump s@ext-ukr-user;       // ІЛЬЧУК
+	701/+380673107857 => jump s@ext-ukr-user;       // ХРУСТІЛЬ Роман 
+	701/+380978669434 => jump s@ext-ukr-user;       // МОЧАЛЮК Сергій
+	701/+380676739560 => jump s@ext-ukr-user;       // МОЧАЛЮК Сергій
+	701/+380674241629 => jump s@ext-ukr-user;       // МАЗУР
+	701/+380680193864 => jump s@ext-ukr-user;       // ФАЛІНСЬКИЙ
+	701/+380961051695 => jump s@ext-ukr-user;       // ПРИДКА
+	701/+380671395875 => jump s@ext-ukr-user;       // ПАЛЕЦЬКА
+	701/+380673402898 => jump s@ext-ukr-user;       // КОВАЛІШИН
+	701/+380678690479 => jump s@ext-ukr-user;       // КОВАЛІШИН
+	701/+380680400301 => jump s@ext-ukr-user;       // ОНОПЕНКО
+	701/+380961027985 => jump s@ext-ukr-user;       // МОЧАЛЮК Мирослава
+	701/+380676739572 => jump s@ext-ukr-user;       // МОЧАЛЮК Мирослава
+	701/+380676759213 => jump s@ext-ukr-user;       // ТІТЕНКО
+	701/+380665071768 => jump s@ext-ukr-user;       // СІНЧУК
+	701/+380970822977 => jump s@ext-ukr-user;       // СІНЧУК
+	701/+380676761363 => jump s@ext-ukr-user;       // ДОБРОВОЛЬСЬКИЙ
+	701/+380676759169 => jump s@ext-ukr-user;       // ДОВГА
+	701/+380971623774 => jump s@ext-ukr-user;       // ТРОФИМЧУК
+	701/+380935574152 => jump s@ext-ukr-user;       // ФЕДОРІН
+	701/+380676739321 => jump s@ext-ukr-user;       // ПРОКОПЮК
+	701/+380673132287 => jump s@ext-ukr-user;       // КРАСНОПОРТКО
+	701/+380673116797 => jump s@ext-ukr-user;       // БОДНАРЧУК
+	701/+380969408721 => jump s@ext-ukr-user;       // ГОНЧАР
+	701/+380970638075 => jump s@ext-ukr-user;       // ГУМЕНЮК
+	701/+380977921301 => jump s@ext-ukr-user;       // КІЧЕРЯК
+	701/+380676767785 => jump s@ext-ukr-user;       // КОВАЛЬЧУК
+	701/+380676759068 => jump s@ext-ukr-user;       // П’ЯНКОВСЬКА
+	701/+380962472967 => jump s@ext-ukr-user;       // ДЕМЧИШИН
+	701/+380977907441 => jump s@ext-ukr-user;       // МІЩАНЧУК
+	701/+380673132247 => jump s@ext-ukr-user;       // ЮХІМОВ
+	701/+380673115352 => jump s@ext-ukr-user;       // КІЧЕРЯК 
+	701/+380676738820 => jump s@ext-ukr-user;       // БАЙТАЛЮК
+	701/+380673413350 => jump s@ext-ukr-user;       // МАЗУР
+	701/+380968434589 => jump s@ext-ukr-user;       // КАРЛИК
+	701/+380676169181 => jump s@ext-ukr-user;       // ТЕРЕЩУК
+	701/+380673358056 => jump s@ext-ukr-user;       // САЛІЙ
+	701/+380680136560 => jump s@ext-ukr-user;       // МІЩАНЧУК 
+	701/+380676984574 => jump s@ext-ukr-user;       // КОНОВЕРСЬКИЙ
+	701/+380987236777 => jump s@ext-ukr-user;       // ДАНИЛИШИН
+	701/+380972845920 => jump s@ext-ukr-user;       // ГІНГІН
+	701/+380968596061 => jump s@ext-ukr-user;       // РОГАЧЕВСЬКИЙ
+	701/+380975268257 => jump s@ext-ukr-user;       // КАПУСТЯНСЬКИЙ
+	701/+380975969808 => jump s@ext-ukr-user;       // СТУПНІЦЬКИЙ 
+        701/+380673734248 => jump s@ext-ukr-user;       // ВАГОВА
+        701/+380673106705 => jump s@ext-ukr-user;       // ПИЛИПЕНКО
+        701/+380676704576 => jump s@ext-ukr-user;       // УВАРОВА
+        701/+380676741361 => jump s@ext-ukr-user;       // ЛЄЙВІНА
+        701/+380676704587 => jump s@ext-ukr-user;       // БЕЗЗУБКІН
+        701/+380966661159 => jump s@ext-ukr-user;       // ХІЛЬ
+        701/+380985908788 => jump s@ext-ukr-user;       // ЗАВАДОВСЬКИЙ
+        701/+380676729040 => jump s@ext-ukr-user;       // САВИЦЬКА
+        701/+380673106335 => jump s@ext-ukr-user;       // ЄМЧЕНКО
+        701/+380673701542 => jump s@ext-ukr-user;       // ШПУК
+        701/+380979908487 => jump s@ext-ukr-user;       // СМОТРИЧ
+        701/+380677181273 => jump s@ext-ukr-user;       // ОЛЕКСІЄНКО
+        701/+380676734016 => jump s@ext-ukr-user;       // ПАЛАШОВАНИЙ
+        701/+380676753329 => jump s@ext-ukr-user;       // МАВДРИК
+        701/+380676751133 => jump s@ext-ukr-user;       // ПАЛАШОВАНИЙ Тарас 
+        701/+380673414911 => jump s@ext-ukr-user;       // СТЕЛЬМАХ
+        701/+380673410862 => jump s@ext-ukr-user;       // ГРИЦА
+        701/+380676707637 => jump s@ext-ukr-user;       // БАС
+        701/+380676760237 => jump s@ext-ukr-user;       // БУДЗИН
+        701/+380673410861 => jump s@ext-ukr-user;       // ФЕДЕНКО
+	701/+380676749375 => jump s@ext-ukr-user;       // БУРДА
+        701/+380634976262 => jump s@ext-ukr-user;       // БУРДА
+        701/+380673701528 => jump s@ext-ukr-user;       // ІВАНЦІК
+        701/+380676731477 => jump s@ext-ukr-user;       // СЕМОТЮК
+        701/+380676763001 => jump s@ext-ukr-user;       // МАКАР
+        701/+380673109228 => jump s@ext-ukr-user;       // ПАЛАМАРЧУК
+        701/+380673109229 => jump s@ext-ukr-user;       // ПАЛАШОВАНИЙ
+        701/+380679097693 => jump s@ext-ukr-user;       // ВЕТОШКО
+        701/+380987704395 => jump s@ext-ukr-user;       // ЗАХАРКО
+        701/+380972694997 => jump s@ext-ukr-user;       // МРАК
+        701/+380972175829 => jump s@ext-ukr-user;       // КАНЦЯР
+        701/+380676732087 => jump s@ext-ukr-user;       // РОМАН
+        701/+380931171667 => jump s@ext-ukr-user;       // ШАНДРА
+        701/+380673718170 => jump s@ext-ukr-user;       // АХМЕТОВА
+        701/+380673418047 => jump s@ext-ukr-user;       // ГУППАЛО
+        701/+380674275419 => jump s@ext-ukr-user;       // МОНАСТИРСЬКА 
+        701/+380673414859 => jump s@ext-ukr-user;       // ЗВІР
+        701/+380676744190 => jump s@ext-ukr-user;       // ГРЕДІЛЬ Роман 
+        701/+380673706772 => jump s@ext-ukr-user;       // ШПУК Орест 
+        701/+380977009469 => jump s@ext-ukr-user;       // ПАЦАЙ
+        701/+380964907880 => jump s@ext-ukr-user;       // ЖОЛИНСЬКА
+        701/+380974750490 => jump s@ext-ukr-user;       // КОСИК Богдан 
+        701/+380674999600 => jump s@ext-ukr-user;       // ПАРОБЕЙКО Йосип 
+        701/+380974987972 => jump s@ext-ukr-user;       // ШВЕЦЬ
+        701/+380970783552 => jump s@ext-ukr-user;       // РЕКА
+        701/+380965040677 => jump s@ext-ukr-user;       // НАВАРІВСЬКИЙ
+        701/+380966347779 => jump s@ext-ukr-user;       // ЛОБОДЗЕЦЬ
+        701/+380673706831 => jump s@ext-ukr-user;       // ЖУМБЕЙ
+        701/+380989003778 => jump s@ext-ukr-user;       // ПРИСТАЙКО
+        701/+380972695148 => jump s@ext-ukr-user;       // ШВЕЦЬ
+        701/+380973316434 => jump s@ext-ukr-user;       // ВЕТОШКО Валентина 
+        701/+380988312399 => jump s@ext-ukr-user;       // ТЕЛЮК
+        701/+380673896534 => jump s@ext-ukr-user;       // ГАДЖУН
+        701/+380970608606 => jump s@ext-ukr-user;       // ДІДИК
+        701/+380969520788 => jump s@ext-ukr-user;       // ЗДОБИЛЯК
+        701/+380975860468 => jump s@ext-ukr-user;       // ШУТА
+        701/+380677405214 => jump s@ext-ukr-user;       // ДОЛИНСЬКА
+        701/+380676761558 => jump s@ext-ukr-user;       // ПАЛИС
+        701/+380676705803 => jump s@ext-ukr-user;       // КАРАПІНКА
+        701/+380676705637 => jump s@ext-ukr-user;       // ОЛІЯРНИК
+        701/+380676705798 => jump s@ext-ukr-user;       // ГНАТИК
+        701/+380975817396 => jump s@ext-ukr-user;       // ШКОЛИК
+        701/+380676705651 => jump s@ext-ukr-user;       // БОРЩОВСЬКА
+        701/+380677927742 => jump s@ext-ukr-user;       // КУТНИЙ
+        701/+380676740930 => jump s@ext-ukr-user;       // КУТНИЙ
+        701/+380676759285 => jump s@ext-ukr-user;       // КІШ
+        701/+380676707664 => jump s@ext-ukr-user;       // ОСТРОВЕРХА
+        701/+380676705664 => jump s@ext-ukr-user;       // ВАСІВ
+        701/+380973147351 => jump s@ext-ukr-user;       // КУХТЕНКО
+        701/+380987105845 => jump s@ext-ukr-user;       // ЛЕСНЯК
+        701/+380676739167 => jump s@ext-ukr-user;       // ЗІНЬКО
+        701/+380676739174 => jump s@ext-ukr-user;       // ФЕДЕНКО
+        701/+380673132085 => jump s@ext-ukr-user;       // КИСЕЛЬОВ
+        701/+380673106691 => jump s@ext-ukr-user;       // ПЕЧЕРСЬКИЙ
+        701/+380676705675 => jump s@ext-ukr-user;       // ЖУРИК
+        701/+380676707612 => jump s@ext-ukr-user;       // РОМАНИШИН
+        701/+380983095140 => jump s@ext-ukr-user;       // ПУТЯК
+        701/+380986693513 => jump s@ext-ukr-user;       // КОТ
+        701/+380676707615 => jump s@ext-ukr-user;       // КОТ
+        701/+380965736414 => jump s@ext-ukr-user;       // СІЖУК
+        701/+380676705802 => jump s@ext-ukr-user;       // СІЖУК
+        701/+380977980644 => jump s@ext-ukr-user;       // ПРИЧКО
+        701/+380676705647 => jump s@ext-ukr-user;       // ЧОРНА
+        701/+380676705622 => jump s@ext-ukr-user;       // ВАСІК
+        701/+380676707614 => jump s@ext-ukr-user;       // РОМАНИШИН
+        701/+380676753338 => jump s@ext-ukr-user;       // ГОЛОВЧАК
+        701/+380673106356 => jump s@ext-ukr-user;       // РЕЗНІЧЕНКО
+        701/+380673106269 => jump s@ext-ukr-user;       // ДОЛИНСЬКА
+        701/+380673106296 => jump s@ext-ukr-user;       // ГРИЦЮК
+        701/+380677712098 => jump s@ext-ukr-user;       // ГАВЕНКО
+        701/+380673106334 => jump s@ext-ukr-user;       // КОБІАШВІЛІ
+        701/+380673106283 => jump s@ext-ukr-user;       // СЕРЕДА
+        701/+380673405574 => jump s@ext-ukr-user;       // СМІЛКА
+        701/+380676753341 => jump s@ext-ukr-user;       // ІЛЬЧИШИН
+        701/+380673401954 => jump s@ext-ukr-user;       // ПОЛІЩУК
+        701/+380673401922 => jump s@ext-ukr-user;       // МАЗІЙ
+        701/+380676761362 => jump s@ext-ukr-user;       // РИЖКОВ
+        701/+380676765284 => jump s@ext-ukr-user;       // БИЧИК
+        701/+380968453697 => jump s@ext-ukr-user;       // ОМЕЛЯН
+	701/+380672766445 => { &dial-EU(+34622604181);
+                               Hangup();
+                             };
+	701/+380676742773 => { Dial(SIP/tts/cr,60);	
+				Hangup();
+			     };
+	701/+380673106810 => jump s@ext-ukr-user;       // ОХОРОНА, ТАНК ТРАНС
+	701/+380673375794 => jump s@ext-ukr-user;       // Рондяк(тато)
+	701/+380962446211 => jump s@ext-ukr-user;       // Дмитро Олійник (дружина)
+	701/+380975956587 => jump s@ext-ukr-user;       // Сергій Федорчук (енергетик)
+	701/+380676739569 => jump s@ext-ukr-user;       // Олександр Мочалюк (MD)
+	701/+380964514192 => jump s@ext-ukr-user;       // Олександр Костюк (IT)
 
-	
 
 
 
 	 701 => {
 		noop(Kyivstar incoming from ${CALLERID(num)});
-		Answer(); 
-		jump s@ivr-ukr-guest;
-	}
+		jump s@ext-ukr-guest;
+	};
 };
 
 
 
 context from-MD {
 // Вхідні з GSM в Молдові
-	 701/060257771 => jump s@ivr-md-user; // Медвідь
-         701/078999322 => jump s@ivr-md-user; // Главацкая
-	 701/069192504 => jump s@ivr-md-user; // Жепелеу
-         701/060772728 => jump s@ivr-md-user; // Дудок
-         701/069858004 => jump s@ivr-md-user; // Тодорчук
-         701/060771118 => jump s@ivr-md-user; // Томашенко
-         701/068264443 => jump s@ivr-md-user; // Черноморец
-         701/068333351 => jump s@ivr-md-user; // Федорчук
+	701/060257771 => jump s@ext-md-user; // Медвідь
+        701/078999322 => jump s@ext-md-user; // Главацкая
+	701/069192504 => jump s@ext-md-user; // Жепелеу
+        701/060772728 => jump s@ext-md-user; // Дудок
+        701/069858004 => jump s@ext-md-user; // Тодорчук
+        701/060771118 => jump s@ext-md-user; // Томашенко
+        701/068264443 => jump s@ext-md-user; // Черноморец
+        701/068333351 => jump s@ext-md-user; // Федорчук
+        701/078046786 => jump s@ext-md-user; // ЛУНГУ 
+	701/069540532 => jump s@ext-md-user; // МОСКАЛЮК 
+	701/069672340 => jump s@ext-md-user; // ГЛАДИШ 
+	701/069592902 => jump s@ext-md-user; // БУГА 
+	701/060525202 => jump s@ext-md-user; // БУЙНОВСКІ 
+	701/069420326 => jump s@ext-md-user; // МОТРЮК 
+	701/079797257 => jump s@ext-md-user; // РИНЖА 
+	701/068229242 => jump s@ext-md-user; // БЕЛІНСЬКИЙ 
+	701/078999324 => jump s@ext-md-user; // МОЧАЛЮК
+	701/068872636 => jump s@ext-md-user; // Vitek
+         701 => {
+                noop(MD-Orange incoming from ${CALLERID(num)});
+                jump s@ext-md-guest;
+         };
+        
+};
+
+
+context from-PL {
+// Вхідні з GSM в Польщі
+        701/+48691339742 => jump s@ext-pl-user; // ЗЬОЛКОВСКІ
+	701/+48691335371 => jump s@ext-pl-user; // ВОЛЬСКА
+        701/+48601943396 => jump s@ext-pl-user; // ЛУКАШЕК
+        701/+48603860639 => jump s@ext-pl-user; // ЯЦКОВСКА
+        701/+48603708829 => jump s@ext-pl-user; // ТРОЯНОВСКА
+        701/+48609519672 => jump s@ext-pl-user; // СЬМЄЛАК
+        701/+48885851052 => jump s@ext-pl-user; // РОНДЯК
+        701/+48605600473 => jump s@ext-pl-user; // ФЕДИНЯК
+        701/+48603708541 => jump s@ext-pl-user; // ПШИЛУЦКА
+        701/+48691510896 => jump s@ext-pl-user; // МІРОВСКІ
+        701/+48601943404 => jump s@ext-pl-user; // ДЗЄДЗІЦ
+        701/+48691510715 => jump s@ext-pl-user; // ДОНДА
+        701/+48660505173 => jump s@ext-pl-user; // НОВАК
+        701/+48605604517 => jump s@ext-pl-user; // ЯРОШ
+        701/+48603708169 => jump s@ext-pl-user; // БАРЩ
+        701/+48691536954 => jump s@ext-pl-user; // КАЧМАРСКІ
+        701/+48603709580 => jump s@ext-pl-user; // СМОЛАРЧІК
+        701/+48601632373 => jump s@ext-pl-user; // ЗЮЛКОВСКІ
+        701/+48609993785 => jump s@ext-pl-user; // БЕК
+        701/+48661424237 => jump s@ext-pl-user; // КАЧМАРСКІ
+        701/+48691111785 => jump s@ext-pl-user; // ХМЄЛЕВСКІ
+        701/+48691113668 => jump s@ext-pl-user; // ВАГОВА (PL)
+        701/+48691334573 => jump s@ext-pl-user; // ДІДУР
+        701/+48609519671 => jump s@ext-pl-user; // БРУДНОВСКА
+        701/+48691910652 => jump s@ext-pl-user; // ЧУБАК
+        701/+48603364663 => jump s@ext-pl-user; // СВЄКЛЕЙ
+        701/+48609990705 => jump s@ext-pl-user; // ВОЙТАШЕК
+        701/+48660505227 => jump s@ext-pl-user; // МАТУШЕВСЬКА
+        701/+48691510804 => jump s@ext-pl-user; // ЛЕВИЦЬКА
+        701/+48691330856 => jump s@ext-pl-user; // ЗАВАНТАЖЕННЯ ГОТОВОЇ ПРОДУКЦІЇ
+        701/+48691332984 => jump s@ext-pl-user; // СКЛАДИ
+        701/+48691445567 => jump s@ext-pl-user; // КОТЕЛЬНЯ
+        701/+48691449023 => jump s@ext-pl-user; // ЕЛЕКТРИКИ
+        701/+48603704204 => jump s@ext-pl-user; // ПУНКТ УПРАВЛІННЯ
+        701/+48691338741 => jump s@ext-pl-user; // ОЧИСНІ СПОРУДИ
+        701/+48508092829 => jump s@ext-pl-user; // МАТИЯ
+        701/+48505540680 => jump s@ext-pl-user; // КУДІН
+        701/+48603706836 => jump s@ext-pl-user; // ЗУЗОК
+        701/+48691442872 => jump s@ext-pl-user; // ПШИЛУЦКІ Міхал
+        701/+48795298282 => jump s@ext-pl-user; // ЗЄЯ Агнешка
+        701/+48795298313 => jump s@ext-pl-user; // АБРАМЧИК-ЩИКУТОВІЧ
+        701/+48511972025 => jump s@ext-pl-user; // ГРУШКА Євгеніуш
+	701/+48690081490 => jump s@ext-pl-user; // Мар'яна Данилейченко
+        701/+48532605475 => jump s@ext-pl-user; // Водій Мочалюка 
+	701/+48796087726 => jump s@ext-pl-user; // SVB (ЩЕрбаков просив)
+	701/+48795298478 => jump s@ext-pl-user; // Дмитро Олійник (PL)
+	701/+48882061270 => jump s@ext-pl-user; // Андрій Єлін (PL)
+	701/+48661610368 => jump s@ext-pl-user; // Палій Роман
+
+//         701/ => jump s@ext-pl-user; //
+
 
 
          701 => {
-                noop(MD-Orange incoming from ${CALLERID(num)});
-                jump s@ivr-md-guest;
-         }
-        
+                noop(PL-T-MOBILE incoming from ${CALLERID(num)});
+                jump s@ext-pl-guest;
+         };
+
+};
+
+
+context probiz-eu {
+// Що ми можемо випустити через шлюз в PL
+// https://jira.dar.lviv.ua/browse/TFI-59
+
+	_+43.    => &call-eu(${EXTEN});  // Австрія
+	_0043.   => &call-eu(+${EXTEN:2}); 
+	_+376.   => &call-eu(${EXTEN});  // Андорра 
+	_00376.  => &call-eu(+${EXTEN:2});
+	_+32.    => &call-eu(${EXTEN});  // Бельгія 
+	_0032.   => &call-eu(+${EXTEN:2}); 
+	_+359.   => &call-eu(${EXTEN}); // Болгарія 
+	_00359.  => &call-eu(+${EXTEN:2});
+	_+44.    => &call-eu(${EXTEN}); // Велика Британія
+	_0044.   => &call-eu(+${EXTEN:2}); 
+	_+379.    => &call-eu(${EXTEN}); // Ватикан 
+	_00379.  => &call-eu(+${EXTEN:2}); 
+	_+30.    => &call-eu(${EXTEN}); // Греція 
+	_0030.   => &call-eu(+${EXTEN:2});
+	_+350.   => &call-eu(${EXTEN}); // Гібраалтар 
+	_00350.  => &call-eu(+${EXTEN:2});
+	_+590.   => &call-eu(${EXTEN}); // Гваделупа 
+	_00590.  => &call-eu(+${EXTEN:2});
+	_+594.   => &call-eu(${EXTEN}); // Gujana Francuska
+	_00594.  => &call-eu(+${EXTEN:2});
+	_+45.    => &call-eu(${EXTEN}); // Данія 
+	_0045.   => &call-eu(+${EXTEN:2}); 
+	_+372.   => &call-eu(${EXTEN}); // Естонія   
+	_00372.  => &call-eu(+${EXTEN:2}); 
+	_+353.   => &call-eu(${EXTEN}); // Ірландія   
+	_00353.  => &call-eu(+${EXTEN:2});
+	_+34.    => &call-eu(${EXTEN}); // Іспанія   
+	_0034.   => &call-eu(+${EXTEN:2});
+	_+354.   => &call-eu(${EXTEN}); // Ісландія 
+	_00354.  => &call-eu(+${EXTEN:2});
+	_+39.    => &call-eu(${EXTEN}); // Італія    
+	_0039.   => &call-eu(+${EXTEN:2});
+	_+357.   => &call-eu(${EXTEN}); // Кіпр  
+	_00357.  => &call-eu(+${EXTEN:2});
+	_+371.   => &call-eu(${EXTEN}); // Латвія 
+	_00371.  => &call-eu(+${EXTEN:2}); 
+	_+370.   => &call-eu(${EXTEN}); // Литва  
+	_00370.  => &call-eu(+${EXTEN:2}); 
+	_+352.   => &call-eu(${EXTEN}); // Люксембург 
+	_00352.  => &call-eu(+${EXTEN:2});
+	_+423.   => &call-eu(${EXTEN}); // Ліхтеншнейн(Швеція)
+	_00423.  => &call-eu(+${EXTEN:2});
+	_+356.   => &call-eu(${EXTEN}); // Мальта   
+	_00356.  => &call-eu(+${EXTEN:2});
+	_+31.    => &call-eu(${EXTEN}); // Голандія (Нідерланди)
+	_0031.   => &call-eu(+${EXTEN:2});
+	_+49.    => &call-eu(${EXTEN}); // Німеччина 
+	_0049.   => &call-eu(+${EXTEN:2});
+	_+47.    => &call-eu(${EXTEN}); // Норвегія 
+	_0047.   => &call-eu(+${EXTEN:2}); 
+	_+48XXXXXXXXX  => &call-eu(${EXTEN}); // Польща 
+	_0048XXXXXXXXX => &call-eu(+${EXTEN:2});
+	_+351.   => &call-eu(${EXTEN}); // Португалія 
+	_00351.  => &call-eu(+${EXTEN:2});
+	_+40.	 => &call-eu(${EXTEN}); // Румунія 
+	_0040.   => &call-eu(+${EXTEN:2}); 
+	_+378.   => &call-eu(${EXTEN}); // Сан-маріно
+	_00378.  => &call-eu(+${EXTEN:2});
+	_+421.   => &call-eu(${EXTEN}); // Словаччина 
+	_00421.  => &call-eu(+${EXTEN:2});
+	_+386.	 => &call-eu(${EXTEN}); // Словенія 
+	_00386.  => &call-eu(+${EXTEN:2});
+	_+36.	 => &call-eu(${EXTEN}); // Угорщина 
+	_0036.   => &call-eu(+${EXTEN:2});
+	_+358.   => &call-eu(${EXTEN}); // Фінляндія 
+	_00358.  => &call-eu(+${EXTEN:2});
+	_+596.   => &call-eu(${EXTEN}); // Мартиніка(Франції)
+	_00596.  => &call-eu(+${EXTEN:2}); 
+	_+262.   => &call-eu(${EXTEN}); // Реюньйон (Франції)
+	_00262.  => &call-eu(+${EXTEN:2});
+	_+377.	 => &call-eu(${EXTEN}); // Монако 
+	_00377.  => &call-eu(+${EXTEN:2});
+	_+33.	 => &call-eu(${EXTEN}); // Франція 
+	_0033.   => &call-eu(+${EXTEN:2});
+	_+385.   => &call-eu(${EXTEN}); // Хорватія 
+	_00385.  => &call-eu(+${EXTEN:2}); 
+	_+420.	 => &call-eu(${EXTEN}); // Чехія 
+	_00420.  => &call-eu(+${EXTEN:2}); 
+	_+46.	 => &call-eu(${EXTEN}); // Швеція 
+	_0046.   => &call-eu(+${EXTEN:2});
+	
+};
+
+context moldova-gw {
+	// md
+        _+3736[089]XXXXXX  => &callout(SIP/MD,${EXTEN});  // Молдова
+        _003736[089]XXXXXX  => &callout(SIP/MD,+${EXTEN:2});
+	_3736[089]XXXXXX  => &callout(SIP/MD,+${EXTEN});
+};
+
+context ukraine-gw {
+        // KS
+        _09[678].  => &callout(SIP/UKR-KS,${EXTEN});   // Kyivstar (UKR)
+        _06[78].   => &callout(SIP/UKR-KS,${EXTEN});
+        _+3809[678].  => &callout(SIP/UKR-KS,${EXTEN});
+        _+3806[78].   => &callout(SIP/UKR-KS,${EXTEN});
+        _003809[678].  => &callout(SIP/UKR-KS,+${EXTEN:2});
+        _003806[78].   => &callout(SIP/UKR-KS,+${EXTEN:2});
+	_3809[678].  => &callout(SIP/UKR-KS,+${EXTEN});
+        _3806[78].   => &callout(SIP/UKR-KS,+${EXTEN});
+};
+
+context voip-carrier {
+	_+X.      => &callout(SIP/systelecom,${EXTEN:1});
+	_00X.	  => &callout(SIP/systelecom,${EXTEN:2});
+};
+
+context tb-internal {
+	_2XX            => &ats(${EXTEN});    // Танки (внутрішні)
+	_[1456]XX       => &callint(${EXTEN});
+	111		=>  { Answer();
+                              musiconhold();
+                        };
+};
+
+context logists-m {
+// Логісти моб.клієнти (випускаєм лише через свої канали )
+
+
+	includes { moldova-gw; };
+	includes { ukraine-gw; };
+	includes { probiz-eu; };
+	includes { tb-internal; };
+
+};
+
+
+context logists {
+// Логісти з Танків з своїми софтфонами і гарнітурами
+// дзвінки до водіїв по європі
+
+	includes { moldova-gw; };
+        includes { ukraine-gw; };
+        includes { probiz-eu; };
+        includes { tb-internal; };	
+	includes { voip-carrier; };
+
+};
+
+
+context from-YAD {
+
 };
 
 
 context tt-out {
 // набір з АТС Танків
 
-	// to MD Orange
-         _003736[089]. => &callout(SIP/MD,+${EXTEN:2});
+	includes { moldova-gw; };
+        includes { ukraine-gw; };
+        includes { probiz-eu; };
+        includes { tb-internal; };
+        includes { voip-carrier; };
 
-        //to  UKR Kyivstar
-         _09[678]. => &callout(SIP/UKR-KS,${EXTEN});
-         _06[78].  => &callout(SIP/UKR-KS,${EXTEN});
-	// to sip and internal
-	 _[46]XX       => &callint(${EXTEN});
-
-	 999    => {
-                Answer();
-                Wait(2);
-                Record(recordings/gr-m.wav);
-                Wait(2);
-                Playback(recordings/gr-m);
-                };
- 
 	
+};
+
+
+context	systele-in {
+	// Якби так часом щось прилетіло від System Telecom - то сюди.
+	_X.     =>  &ats(228);
+	s	=>  &ats(228);
+
 };
 
